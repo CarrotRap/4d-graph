@@ -2,5 +2,9 @@
   "dependencies": {
     "mathjs": "^10.5.3",
     "three": "^0.140.2"
+  },
+  "devDependencies": {
+    "@parcel/transformer-sass": "^2.5.0",
+    "parcel": "^2.5.0"
   }
 }
