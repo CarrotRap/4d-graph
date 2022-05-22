@@ -1,6 +1,9 @@
 {
   "dependencies": {
+    "jquery": "^3.6.0",
+    "katex": "^0.15.6",
     "mathjs": "^10.5.3",
+    "mathquill-node": "^1.0.8",
     "three": "^0.140.2"
   },
   "devDependencies": {
