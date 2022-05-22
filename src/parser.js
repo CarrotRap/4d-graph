@@ -24,7 +24,9 @@ export default function parse(latex) {
     let mathExpr = null
     try {
         mathExpr = normalizeMathExpr(new AlgebraLatex().parseLatex(expr).toMath());
-    } catch (error) {}
+    } catch (error) {console.error(error)}
+
+    console.log(mathExpr)
 
     const func = (n) => {
         const args = {}
