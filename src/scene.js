@@ -1,8 +1,14 @@
+import * as math from 'mathjs';
 import * as THREE from 'three';
+
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 
 export default class Scene {
     constructor(domElement) {
         this.domElement = domElement
+
+        this.range = 10
+        this.precision = 10
 
         this.setSize()
 
@@ -12,7 +18,18 @@ export default class Scene {
     init() {
         this.scene = new THREE.Scene();
 
+        this.axesFunctions = new THREE.Group()
+        this.axesFunctions.rotation.x = Math.PI / -2
+        this.scene.add(this.axesFunctions)
+
+        this.functionsGroup = new THREE.Group()
+        this.axesFunctions.add(this.functionsGroup);
+
+        this.functions = []
+
         this.setCamera()
+
+        this.addDefaultsObjects()
 
         this.setRenderer()
 
@@ -21,7 +38,7 @@ export default class Scene {
 
     /* ALL SETTER */
     setSize() {
-        this.width = window.innerWidth * 0.7
+        this.width = window.innerWidth * 0.8
         this.height = window.innerHeight
     }
 
@@ -37,19 +54,65 @@ export default class Scene {
 
     setCamera() {
         this.camera = new THREE.PerspectiveCamera(75, this.width/this.height,0.1,1000)
-        this.camera.z = 10;
+        this.camera.position.z = 10;
         this.camera.lookAt(new THREE.Vector3())
     }
 
     setRenderer() {
-        this.renderer = new THREE.WebGLRenderer({canvas: this.domElement})
-        this.renderer.setAnimationLoop(() => { this.loop() });
+        this.renderer = new THREE.WebGLRenderer({canvas: this.domElement});
         this.renderer.setSize(this.width, this.height)
-        this.renderer.setClearColor(0xFCFFE7)
+        //this.renderer.setClearColor(0xFCFFE7)
+
+        this.renderer.setAnimationLoop(() => { this.loop() });
     }
     /* END OF SETTER */
 
+    addDefaultsObjects() {
+        this.controls = new OrbitControls(this.camera, this.domElement);
+
+        this.axes = new THREE.AxesHelper()
+        this.axesFunctions.add(this.axes)
+    }
+
+    reloadFunction() {
+        for (var i = this.functionsGroup.children.length - 1; i >= 0; i--) {
+            this.functionsGroup.remove(this.functionsGroup.children[i]);
+        }
+        for(var func of this.functions) {
+            this.addIN3D(func.func)
+        }
+    }
+
+    updateFunction(functions) {
+        this.functions = functions
+
+        this.reloadFunction()
+    }
+ 
+    addIN3D(func) {
+        const geometry = new THREE.PlaneGeometry(this.range, this.range, this.range * this.precision, this.range * this.precision);
+        geometry.computeBoundingBox()
+        geometry.computeBoundingSphere()
+        
+        const position = geometry.getAttribute('position');
+
+        for(let i = 0; i < position.count; i++) {
+            const vertex = new THREE.Vector3().fromBufferAttribute(position, i)
+
+            const z = func(math.complex(vertex.x, vertex.y))
+
+            vertex.z = z.re
+
+            position.setXYZ(i,vertex.x, vertex.y, vertex.z)
+        }
+
+        const material = new THREE.MeshNormalMaterial({ side: THREE.DoubleSide, wireframe: true });
+
+        const mesh = new THREE.Mesh(geometry, material);
+        this.functionsGroup.add(mesh);
+    }
+
     loop() {
-        this.renderer.render(this.scene, this.camera);
+        this.renderer.render(this.scene, this.camera)
     }
 }

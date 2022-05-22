@@ -5,4 +5,6 @@ const canvas    = document.querySelector('canvas');
 
 const scene = new Scene(canvas)
 
-const functionGui = new FunctionGui()
+const functionGui = new FunctionGui((functions) => {
+    scene.updateFunction(functions)
+})

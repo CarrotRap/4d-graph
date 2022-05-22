@@ -1,12 +1,15 @@
 import * as math from 'mathjs';
+import parse from './parser';
 import MathQuill from 'mathquill-node';
 
 const MQ = MathQuill.getInterface(2)
 
 export default class FunctionGui {
-    constructor() {
+    constructor(sendToRender) {
         this.element = document.querySelector('.left');
         this.addBtn = this.element.querySelector('.addFunc')
+
+        this.sendToRender = sendToRender;
     
         this.functions = []
 
@@ -37,11 +40,37 @@ export default class FunctionGui {
 
         this.element.appendChild(funcDiv)
 
+        const mqIntance = MQ.MathField(fieldFunction)
+
+        funcDiv.addEventListener('keyup', () => {
+            /* Parse function, verif if function is OK and send all functions to 3D render */
+            const mathFunc = parse(mqIntance.latex())
+            
+            if(mathFunc) {
+                const funcInfo = this.getFunction(id)
+                funcInfo['name'] = mathFunc.name;
+                funcInfo['func'] = mathFunc.func;
+                funcInfo['variable'] = mathFunc.variable
+                this.updateFunction(id, funcInfo)
+
+                this.sendToRender(this.functions)
+            }
+        })
+
+
         this.functions.push({
             id,
             element: funcDiv,
-            mqIntance: MQ.MathField(fieldFunction)
+            mqIntance,
         })
+    }
+
+    getFunction(id) {
+        return this.functions[id]
+    }
+
+    updateFunction(id, newFunc) {
+        this.functions[id] = newFunc
     }
 
     removeFunction(id) {
@@ -51,7 +80,7 @@ export default class FunctionGui {
 
         this.functions.splice(this.functions.indexOf(func), 1);
 
-        console.log(this.functions)
+        this.sendToRender(this.functions)
     }
 
     getNewID() {

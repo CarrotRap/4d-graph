@@ -14,7 +14,7 @@ body {
 .left {
     position: relative;
     box-sizing: border-box;
-    grid-column: 1/7;
+    grid-column: 1/5;
     box-shadow: 3px 0px 10px rgba(0,0,0,0.2);
     z-index: 100;
 
@@ -93,7 +93,7 @@ body {
 }
 
 .right {
-    grid-column: 7/-1;
+    grid-column: 5/-1;
 
     & canvas {
         width: 100%;
