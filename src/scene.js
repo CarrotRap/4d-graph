@@ -3,6 +3,8 @@ import * as THREE from 'three';
 
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 
+const hslRange = 0.8
+
 export default class Scene {
     constructor(domElement) {
         this.domElement = domElement
@@ -93,20 +95,39 @@ export default class Scene {
         const geometry = new THREE.PlaneGeometry(this.range, this.range, this.range * this.precision, this.range * this.precision);
         geometry.computeBoundingBox()
         geometry.computeBoundingSphere()
-        
-        const position = geometry.getAttribute('position');
 
+        const points = []
+        
+        let wMax = 0
+        let wMin = 0
+        const position = geometry.getAttribute('position');
+        for(let i = 0; i < position.count; i++) {
+            const vertex = new THREE.Vector3().fromBufferAttribute(position, i)
+            const z = func(math.complex(vertex.x, vertex.y))
+
+            if(z.im > wMax) wMax = z.im;
+            if(z.im < wMin) wMin = z.im
+
+            points.push(z)
+        }
+
+        geometry.setAttribute('color', new THREE.BufferAttribute(new Float32Array(position.count * 3), 3))
+        const colors = geometry.attributes.color;
+
+        const wRange = math.abs(wMax - wMin)
         for(let i = 0; i < position.count; i++) {
             const vertex = new THREE.Vector3().fromBufferAttribute(position, i)
 
-            const z = func(math.complex(vertex.x, vertex.y))
+            const result = points[i];
+            vertex.z = result.re
 
-            vertex.z = z.re
+            const color = new THREE.Color(0xffffff).setHSL(hslRange - ((result.im + math.abs(wMin))/wRange*hslRange), 1, 0.5)
+            colors.setXYZ(i, color.r, color.g, color.b);
 
-            position.setXYZ(i,vertex.x, vertex.y, vertex.z)
+            position.setXYZ(i, vertex.x, vertex.y, vertex.z);
         }
 
-        const material = new THREE.MeshNormalMaterial({ side: THREE.DoubleSide, wireframe: true });
+        const material = new THREE.MeshBasicMaterial({ side: THREE.DoubleSide, vertexColors: true, wireframe: true });
 
         const mesh = new THREE.Mesh(geometry, material);
         this.functionsGroup.add(mesh);

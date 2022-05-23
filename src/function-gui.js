@@ -1,5 +1,5 @@
 import * as math from 'mathjs';
-import parse from './parser';
+import parser from './parser';
 import MathQuill from 'mathquill-node';
 
 const MQ = MathQuill.getInterface(2)
@@ -11,81 +11,105 @@ export default class FunctionGui {
 
         this.sendToRender = sendToRender;
     
-        this.functions = []
+        this.maths = []
 
         this.setEvents()
 
-        this.addFunction()
+        this.addMath()
     }
 
     setEvents() {
-        this.addBtn.addEventListener('click', () => this.addFunction())
+        this.addBtn.addEventListener('click', () => this.addMath())
     }
 
-    addFunction() {
+    addMath() {
         const id = this.getNewID()
 
-        const funcDiv = document.createElement('div')
-        funcDiv.className = 'function item';
-
-        const fieldFunction = document.createElement('span');
-        fieldFunction.className = 'fieldFunction'
-        funcDiv.appendChild(fieldFunction)
+        const mathDiv = document.createElement('div')
+        mathDiv.className = 'math'
+        const field = document.createElement('span');
+        field.className = 'field'
+        mathDiv.appendChild(field)
 
         const removeBtn = document.createElement('span');
         removeBtn.className = 'remove'
-        removeBtn.addEventListener('click', () => { this.removeFunction(id) })
+        removeBtn.addEventListener('click', () => { this.removeMath(id) })
 
-        funcDiv.appendChild(removeBtn)
+        mathDiv.appendChild(removeBtn)
 
-        this.element.appendChild(funcDiv)
+        this.element.appendChild(mathDiv)
 
-        const mqIntance = MQ.MathField(fieldFunction)
+        const mqIntance = MQ.MathField(field)
 
-        funcDiv.addEventListener('keyup', () => {
+        mathDiv.addEventListener('keyup', () => {
             /* Parse function, verif if function is OK and send all functions to 3D render */
-            const mathFunc = parse(mqIntance.latex())
             
-            if(mathFunc) {
-                const funcInfo = this.getFunction(id)
-                funcInfo['name'] = mathFunc.name;
-                funcInfo['func'] = mathFunc.func;
-                funcInfo['variable'] = mathFunc.variable
-                this.updateFunction(id, funcInfo)
+            const latex = parser.removeUseless(mqIntance.latex());
 
-                this.sendToRender(this.functions)
+            const type = parser.typeOfEnter(latex)
+            
+            if(type) {
+                if(type.type === 'newFunction') {
+                    const mathFunc = parser.parse(mqIntance.latex())
+    
+                    if(mathFunc) {
+                        const funcInfo = this.getMath(id)
+                        funcInfo['name'] = mathFunc.name;
+                        funcInfo['func'] = mathFunc.func;
+                        funcInfo['variable'] = mathFunc.variable
+                        this.updateMaths(id, funcInfo)
+    
+                        this.sendToRender(this.maths)
+                    }
+                } else if(type.type === 'getFunction') {
+                    const funcInfo = parser.extractInfo(latex)
+                    const func = this.getMathFunction(funcInfo.name);
+    
+                    if(func) {
+                        const res = func.func(funcInfo.num)
+    
+                        console.log(latex, type)
+                        if(latex === type.match) {
+                            mqIntance.latex(type.match + res.format(5))
+                        }
+                    }
+                }
             }
         })
 
 
-        this.functions.push({
+        this.maths.push({
             id,
-            element: funcDiv,
+            element: mathDiv,
             mqIntance,
         })
     }
 
-    getFunction(id) {
-        return this.functions[id]
+    getMath(id) {
+        return this.maths[id]
     }
 
-    updateFunction(id, newFunc) {
-        this.functions[id] = newFunc
+    getMathFunction(name) {
+        return this.maths.find(a => a.name === name);
     }
 
-    removeFunction(id) {
-        const func = this.functions.find(a => a.id === id);
+    updateMaths(id, newMath) {
+        this.maths[id] = newMath
+    }
+
+    removeMath(id) {
+        const func = this.maths.find(a => a.id === id);
 
         this.element.removeChild(func.element)
 
-        this.functions.splice(this.functions.indexOf(func), 1);
+        this.maths.splice(this.maths.indexOf(func), 1);
 
-        this.sendToRender(this.functions)
+        this.sendToRender(this.maths)
     }
 
     getNewID() {
         let maxID = -1;
-        this.functions.forEach(value => {
+        this.maths.forEach(value => {
             if(value.id > maxID) { maxID = value.id; }
         })
         return maxID + 1;

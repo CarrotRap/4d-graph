@@ -1,12 +1,37 @@
 import * as math from 'mathjs';
 import AlgebraLatex from 'algebra-latex';
-/**
- * 
- * @param {string} latex 
- */
+
+export default {
+    typeOfEnter, parse, removeUseless, extractInfo
+}
+
+function typeOfEnter(latex) {
+    if(latex.match(/([a-z])(\()([a-z])(\)=)/g)) {
+        return {
+            type: 'newFunction'
+        }
+    }
+
+    let match = latex.match(/([a-z])(\()(([\d]+)|((?:[\-]?)([\d]+)([\+|\-])([\d]+)[\i]))(\)=)/g);
+    if(match) {
+        return {
+            type: 'getFunction',
+            match: match[0]
+        }
+    }
+
+    console.log(latex)
+}
+
+function extractInfo(latex) {
+    return {
+        name: latex.split('(')[0],
+        num: math.complex(latex.split('(')[1].split(')')[0])
+    }
+}
 
 
-export default function parse(latex) {
+function parse(latex) {
     if(latex.indexOf('=') === -1) return;
 
     let first = latex.match(/(.+)(\()(.+)(\))/g);
