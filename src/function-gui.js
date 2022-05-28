@@ -1,8 +1,6 @@
 import * as math from 'mathjs';
 import parser from './parser';
 
-const MQ = MathQuill.getInterface(2)
-
 export default class FunctionGui {
     constructor(send) {
         this.element = document.querySelector('.left');
