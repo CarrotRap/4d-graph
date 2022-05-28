@@ -1,15 +1,14 @@
 import * as math from 'mathjs';
 import parser from './parser';
-import MathQuill from 'mathquill-node';
 
 const MQ = MathQuill.getInterface(2)
 
 export default class FunctionGui {
-    constructor(sendToRender) {
+    constructor(send) {
         this.element = document.querySelector('.left');
         this.addBtn = this.element.querySelector('.addFunc')
 
-        this.sendToRender = sendToRender;
+        this.send = send;
     
         this.maths = []
 
@@ -27,84 +26,92 @@ export default class FunctionGui {
 
         const mathDiv = document.createElement('div')
         mathDiv.className = 'math'
-        const field = document.createElement('span');
-        field.className = 'field'
-        mathDiv.appendChild(field)
 
-        const removeBtn = document.createElement('span');
-        removeBtn.className = 'remove'
-        removeBtn.addEventListener('click', () => { this.removeMath(id) })
+        const mathInput = document.createElement('input');
+        mathInput.addEventListener('input', (e) => {
+            const info = parser.extractInfo(e.target.value)
 
-        mathDiv.appendChild(removeBtn)
+            this.updateMath(id, (math) => {
+                math.content = e.target.value
+
+                switch(info.type) {
+                    case 'notvalid':
+                        math.state = 'notvalid';
+                        break;
+
+                    case 'number':
+                        math.name = info.name;
+                        math.number = info.number;
+                        math.state = 'get';
+
+                        const parentMath = this.getParentFunction(math.name);
+
+                        if(parentMath && e.target.value.indexOf('=') !== -1) {
+                            mathInput.value += parentMath.jsFunc(math.number).format(5)
+                        }
+
+                        break;
+
+                    case 'var':
+                        math.name = info.name;
+                        math.var = info.var
+                        math.state = 'new';
+
+                        if(info.function === '') {
+                            math.function = math.var
+                        } else {
+                            math.function = info.function
+                        }
+
+                        math.jsFunc = parser.parse(math.function, math.var);
+                        break;
+                }
+
+                return math;
+            })
+        })
+        mathDiv.appendChild(mathInput);
+
+        const remove = document.createElement('span');
+        remove.className = 'remove'
+        remove.addEventListener('click', () => {
+            this.removeMath(id)
+        })
+        mathDiv.appendChild(remove)
 
         this.element.appendChild(mathDiv)
 
-        const mqIntance = MQ.MathField(field)
-
-        mathDiv.addEventListener('keyup', () => {
-            /* Parse function, verif if function is OK and send all functions to 3D render */
-            
-            const latex = parser.removeUseless(mqIntance.latex());
-
-            const type = parser.typeOfEnter(latex)
-            
-            if(type) {
-                if(type.type === 'newFunction') {
-                    const mathFunc = parser.parse(mqIntance.latex())
-    
-                    if(mathFunc) {
-                        const funcInfo = this.getMath(id)
-                        funcInfo['name'] = mathFunc.name;
-                        funcInfo['func'] = mathFunc.func;
-                        funcInfo['variable'] = mathFunc.variable
-                        this.updateMaths(id, funcInfo)
-    
-                        this.sendToRender(this.maths)
-                    }
-                } else if(type.type === 'getFunction') {
-                    const funcInfo = parser.extractInfo(latex)
-                    const func = this.getMathFunction(funcInfo.name);
-    
-                    if(func) {
-                        const res = func.func(funcInfo.num)
-    
-                        console.log(latex, type)
-                        if(latex === type.match) {
-                            mqIntance.latex(type.match + res.format(5))
-                        }
-                    }
-                }
-            }
-        })
-
-
         this.maths.push({
             id,
-            element: mathDiv,
-            mqIntance,
+            el: mathDiv,
+            content: '',
         })
     }
 
     getMath(id) {
-        return this.maths[id]
+        return this.maths.find(a => a.id === id);
     }
 
-    getMathFunction(name) {
-        return this.maths.find(a => a.name === name);
+    getParentFunction(name) {
+        return this.maths.find(a => (a.name === name && a.state === 'new'));
     }
 
-    updateMaths(id, newMath) {
-        this.maths[id] = newMath
+    updateMath(id, callback) {
+        const math = this.getMath(id);
+        
+        this.maths[this.maths.indexOf(math)] = callback(math)
+
+        this.updateRenderer()
     }
 
     removeMath(id) {
-        const func = this.maths.find(a => a.id === id);
+        const math = this.maths.find(a => a.id === id);
 
-        this.element.removeChild(func.element)
+        this.element.removeChild(math.el)
 
-        this.maths.splice(this.maths.indexOf(func), 1);
+        this.maths.splice(this.maths.indexOf(math), 1);
 
-        this.sendToRender(this.maths)
+        this.updateRenderer()
     }
 
     getNewID() {
@@ -113,5 +120,9 @@ export default class FunctionGui {
             if(value.id > maxID) { maxID = value.id; }
         })
         return maxID + 1;
+    }
+
+    updateRenderer() {
+        this.send(this.maths.filter(a => a.state === 'new'))
     }
 }

@@ -81,7 +81,7 @@ export default class Scene {
             this.functionsGroup.remove(this.functionsGroup.children[i]);
         }
         for(var func of this.functions) {
-            this.addIN3D(func.func)
+            this.addIN3D(func.jsFunc)
         }
     }
 

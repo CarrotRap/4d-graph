@@ -31,38 +31,26 @@ body {
     & .math {
         position: relative;
 
-        & .field {
+        & input {
             width: 100%;
-            text-align: center;
-            padding: 5px 0;
+            border: 1px solid black;
+            border-radius: 0;
+            outline: 0;
+            display: block;
             box-sizing: border-box;
+            font-family: 'Montserrat', sans-serif;
+            padding: 10px 5px;
+            font-weight: 800;
         }
 
         & .remove {
-            position: absolute;
-            top: 7px;
-            right: 5px;
             width: 15px;
-            height: 15px;
+            height: 4px;
+            background-color: black;
+            position: absolute;
+            bottom: 5px;
+            right: 5px;
             cursor: pointer;
-
-            &::before, &::after {
-                position: absolute;
-                top: 50%;
-                content: '';
-                width: 100%;
-                height: 2px;
-                background-color: black;
-                border-radius: 5px;
-            }
-
-            &::before {
-                transform: translateY(-50%) rotate(-45deg);
-            }
-
-            &::after {
-                transform: translateY(-50%) rotate(45deg);
-            }
         }
     }
 
